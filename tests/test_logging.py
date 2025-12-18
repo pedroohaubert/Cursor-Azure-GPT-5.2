@@ -52,6 +52,37 @@ def test_should_not_refact(mocker):
     assert redacted_headers == headers
 
 
+def test_log_request_accepts_null_tool_function(app, mocker):
+    """Test that log_request handles null function values gracefully."""
+    mocker.patch("app.common.logging.console.rule")
+    mocker.patch("app.common.logging.console.print_json")
+    mocker.patch("app.common.logging.console.print")
+    with app.test_request_context(
+        "/chat/completions",
+        method="POST",
+        json={
+            "model": "gpt-5.2",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "oi",
+                    "tool_calls": [
+                        {"id": "call_1", "type": "function", "function": None}
+                    ],
+                }
+            ],
+            "tools": [{"type": "function", "function": None}],
+        },
+    ):
+        from flask import request
+
+        from app.common.logging import log_request
+
+        request_id = log_request(request)
+        assert isinstance(request_id, str)
+        assert request_id
+
+
 class TestLogContextEnabled(ReplyBase):
     """Test that log_request is called when LOG_CONTEXT=True."""
 

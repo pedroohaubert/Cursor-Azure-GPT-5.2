@@ -27,6 +27,75 @@ class RequestAdapter:
         self.adapter = adapter  # AzureAdapter instance for shared config/env
 
     # ---- Helpers (kept local to minimize cross-module coupling) ----
+    def _extract_text_from_content(self, content: Any) -> str:
+        """Extract text from content, handling both string and array formats.
+
+        OpenAI Chat API can send content as:
+        - A string: "Hello"
+        - An array: [{"type": "text", "text": "Hello"}, {"type": "image_url", ...}]
+
+        Returns the concatenated text from all text-type content items.
+        """
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            text_parts: List[str] = []
+            for item in content:
+                if isinstance(item, dict):
+                    item_type = item.get("type")
+                    if item_type == "text":
+                        text_parts.append(item.get("text", ""))
+                    elif "text" in item:
+                        text_parts.append(str(item.get("text", "")))
+            return "".join(text_parts)
+        return str(content) if content is not None else ""
+
+    def _convert_content_to_responses_format(
+        self, content: Any, role: str
+    ) -> List[Dict[str, Any]]:
+        """Convert OpenAI Chat API content format to Azure Responses API format.
+
+        OpenAI Chat API can send content as:
+        - A string: "Hello"
+        - An array: [{"type": "text", "text": "Hello"}, {"type": "image_url", "image_url": {"url": "..."}}]
+
+        Azure Responses API expects:
+        - [{"type": "input_text", "text": "Hello"}, {"type": "input_image", "image_url": "..."}]
+
+        Returns a list of content items in Azure Responses API format.
+        """
+        if isinstance(content, str):
+            content_type = "input_text" if role == "user" else "output_text"
+            return [{"type": content_type, "text": content}]
+
+        if isinstance(content, list):
+            responses_content: List[Dict[str, Any]] = []
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+
+                item_type = item.get("type")
+                if item_type == "text":
+                    content_type = "input_text" if role == "user" else "output_text"
+                    text = item.get("text", "")
+                    if text:
+                        responses_content.append({"type": content_type, "text": text})
+                elif item_type == "image_url":
+                    image_url_obj = item.get("image_url", {})
+                    image_url = (
+                        image_url_obj.get("url")
+                        if isinstance(image_url_obj, dict)
+                        else image_url_obj
+                    )
+                    if image_url:
+                        responses_content.append(
+                            {"type": "input_image", "image_url": image_url}
+                        )
+
+            return responses_content if responses_content else []
+
+        return []
+
     def _copy_request_headers_for_azure(
         self, src: Request, *, api_key: str
     ) -> Dict[str, str]:
@@ -47,30 +116,31 @@ class RequestAdapter:
             role = m.get("role")
             content = m.get("content")
             if role in {"system", "developer"}:
-                instructions_parts.append(content)
+                text_content = self._extract_text_from_content(content)
+                instructions_parts.append(text_content)
                 continue
             # For user/assistant/tools as inputs
             if role == "tool":
                 call_id = m.get("tool_call_id")
+                text_content = self._extract_text_from_content(content)
 
                 item = {
                     "type": "function_call_output",
-                    "output": content,
+                    "output": text_content,
                     "status": "completed",
                     "call_id": call_id,
                 }
                 input_items.append(item)
             else:
-                item = {
-                    "role": role or "user",
-                    "content": [
-                        {
-                            "type": "input_text" if role == "user" else "output_text",
-                            "text": content,
-                        },
-                    ],
-                }
-                input_items.append(item)
+                responses_content = self._convert_content_to_responses_format(
+                    content, role or "user"
+                )
+                if responses_content:
+                    item = {
+                        "role": role or "user",
+                        "content": responses_content,
+                    }
+                    input_items.append(item)
 
                 if tool_calls := m.get("tool_calls"):
                     for tool_call in tool_calls:
