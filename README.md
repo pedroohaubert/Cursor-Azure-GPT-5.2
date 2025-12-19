@@ -22,6 +22,29 @@ This project originates from Cursor's lack of support for Azure models that are 
 >
 > The models `gpt-5-pro` and `gpt-5-codex` remain available only through the **Responses API**, but work great with this project (see list of specific model limitations in the next section).
 
+## Multi-Backend Support
+
+This proxy now supports multiple AI backends with a unified OpenAI-compatible interface:
+
+- **Azure OpenAI Responses API**: GPT-5 reasoning models with configurable effort levels
+- **Anthropic Messages API**: Claude Sonnet and Opus models
+
+See [docs/MULTI_BACKEND.md](docs/MULTI_BACKEND.md) for detailed configuration and usage.
+
+### Quick Start
+
+1. Configure your models in `app/models.yaml`
+2. Set API keys in `.env`:
+   ```bash
+   ANTHROPIC_API_KEY=your-key
+   AZURE_API_KEY=your-key
+   ```
+3. Use any configured model by name:
+   ```bash
+   curl -X POST http://localhost:5000/chat/completions \
+     -d '{"model": "claude-sonnet-4-5", "messages": [...]}'
+   ```
+
 ## Supported Models
 
 The entire gpt-5 series is supported, although some models have some limitations on the reasoning effort / verbosity / truncation values they accept: 
