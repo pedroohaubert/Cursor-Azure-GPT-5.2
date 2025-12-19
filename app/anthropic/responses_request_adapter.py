@@ -30,8 +30,13 @@ class AnthropicResponsesRequestAdapter:
     def _get_bearer_token(self) -> str:
         """Get Azure AD bearer token for Responses API authentication.
 
-        Uses DefaultAzureCredential with scope https://ai.azure.com/.default
-        This requires azure-identity package and Azure CLI login (az login).
+        Supports multiple authentication methods:
+        1. Service Principal (for production Docker):
+           - Set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID
+        2. DefaultAzureCredential (for local dev):
+           - Uses az login, managed identity, etc.
+
+        Requires scope: https://ai.azure.com/.default
         """
         if not AZURE_IDENTITY_AVAILABLE:
             from ..exceptions import ServiceConfigurationError
@@ -42,7 +47,29 @@ class AnthropicResponsesRequestAdapter:
 
         # Initialize credential if needed
         if self._credential is None:
-            self._credential = DefaultAzureCredential()
+            # Check if Service Principal credentials are available
+            settings = current_app.config
+            client_id = settings.get("AZURE_CLIENT_ID")
+            client_secret = settings.get("AZURE_CLIENT_SECRET")
+            tenant_id = settings.get("AZURE_TENANT_ID")
+
+            if client_id and client_secret and tenant_id:
+                # Use Service Principal (for production)
+                from azure.identity import ClientSecretCredential
+                current_app.logger.info(
+                    "[Claude Responses API] Using Service Principal authentication"
+                )
+                self._credential = ClientSecretCredential(
+                    tenant_id=tenant_id,
+                    client_id=client_id,
+                    client_secret=client_secret
+                )
+            else:
+                # Use DefaultAzureCredential (for local dev with az login)
+                current_app.logger.info(
+                    "[Claude Responses API] Using DefaultAzureCredential (requires az login)"
+                )
+                self._credential = DefaultAzureCredential()
 
         # Get token with AI Foundry scope
         scope = "https://ai.azure.com/.default"
@@ -56,7 +83,9 @@ class AnthropicResponsesRequestAdapter:
         except Exception as e:
             from ..exceptions import ServiceConfigurationError
             raise ServiceConfigurationError(
-                f"Failed to obtain Azure AD token. Make sure you're logged in with 'az login'. "
+                f"Failed to obtain Azure AD token. "
+                f"For production Docker, set: AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID. "
+                f"For local dev, run 'az login'. "
                 f"Error: {e}"
             )
 

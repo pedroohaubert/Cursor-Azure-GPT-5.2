@@ -42,3 +42,9 @@ AZURE_RESPONSES_API_URL = (
 
 # Anthropic configuration
 ANTHROPIC_API_KEY = env.str("ANTHROPIC_API_KEY", "")
+
+# Azure AD Service Principal (for Responses API with Claude in production)
+# Only needed if using api_format: responses in models.yaml
+AZURE_CLIENT_ID = env.str("AZURE_CLIENT_ID", "")
+AZURE_CLIENT_SECRET = env.str("AZURE_CLIENT_SECRET", "")
+AZURE_TENANT_ID = env.str("AZURE_TENANT_ID", "")
