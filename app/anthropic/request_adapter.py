@@ -179,28 +179,19 @@ class AnthropicRequestAdapter:
         messages = payload.get("messages", [])
 
         # Determine max_tokens
-        # If thinking is enabled, max_tokens must be > thinking_budget
-        # max_tokens = thinking_budget + desired_response_tokens
-        thinking_budget = self.adapter.model_config.thinking_budget
-
-        if thinking_budget:
-            # User's requested output tokens (default to 16k if not specified)
-            requested_tokens = payload.get("max_tokens") or 16384
-            # Total must be thinking + response
-            total_max_tokens = thinking_budget + requested_tokens
-        else:
-            # No thinking, just use requested or default
-            total_max_tokens = (
-                payload.get("max_tokens") or
-                self.adapter.model_config.max_tokens or
-                16384
-            )
+        # max_tokens is the TOTAL limit (thinking + response combined)
+        # thinking_budget is part of max_tokens, not additive
+        max_tokens = (
+            payload.get("max_tokens") or
+            self.adapter.model_config.max_tokens or
+            64000  # High default for long responses
+        )
 
         # Build Anthropic request body
         anthropic_body = {
             "model": self.adapter.model_config.api_model,
             "messages": self._convert_messages(messages),
-            "max_tokens": total_max_tokens,
+            "max_tokens": max_tokens,
             "stream": True,
         }
 
@@ -221,7 +212,7 @@ class AnthropicRequestAdapter:
             anthropic_body["tools"] = self._convert_tools(tools)
 
         # Add extended thinking if configured
-        if thinking_budget:
+        if thinking_budget := self.adapter.model_config.thinking_budget:
             anthropic_body["thinking"] = {
                 "type": "enabled",
                 "budget_tokens": thinking_budget

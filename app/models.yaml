@@ -34,22 +34,25 @@ models:
   # Anthropic Claude models via Azure AI Foundry
   # NOTE: base_url should point to your Azure Foundry endpoint
   # Set ANTHROPIC_API_KEY to your Azure Foundry API key (not Anthropic direct API key)
-  # Extended thinking enabled - thinking_budget + max_tokens must be <= model's max output
+  # Extended thinking enabled - thinking_budget is part of max_tokens (not additive)
 
   claude-haiku-4-5:
     backend: anthropic
     api_model: claude-haiku-4-5  # This is the deployment_name in Foundry
     base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
-    thinking_budget: 10000  # 10k tokens for thinking, leaves ~54k for response
+    max_tokens: 64000  # Maximum output tokens for Haiku
+    thinking_budget: 32000  # 32k for thinking, leaves 32k for response
 
   claude-sonnet-4-5:
     backend: anthropic
     api_model: claude-sonnet-4-5
     base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
-    thinking_budget: 10000  # 10k tokens for thinking, leaves ~54k for response
+    max_tokens: 64000  # Maximum output tokens for Sonnet
+    thinking_budget: 32000  # 32k for thinking, leaves 32k for response
 
   claude-opus-4-5:
     backend: anthropic
     api_model: claude-opus-4-5
     base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
-    thinking_budget: 10000  # 10k tokens for thinking, leaves ~54k for response
+    max_tokens: 64000  # Maximum output tokens for Opus
+    thinking_budget: 32000  # 32k for thinking, leaves 32k for response
