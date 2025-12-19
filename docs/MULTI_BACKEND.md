@@ -50,7 +50,8 @@ models:
 **Anthropic models:**
 - `backend`: "anthropic"
 - `api_model`: Anthropic model ID (e.g., "claude-sonnet-4.5-20250514") or deployment name (for Foundry)
-- `max_tokens`: (optional) Default max tokens (default: 8192)
+- `max_tokens`: (optional) Default max tokens (default: 64000)
+- `thinking_budget`: (optional) Extended thinking budget in tokens (default: 32000)
 - `base_url`: (optional) Custom endpoint URL (for Azure AI Foundry: `https://xxx.openai.azure.com/anthropic`)
 
 **Example for Azure AI Foundry:**
@@ -149,6 +150,58 @@ Returns:
   }
 }
 ```
+
+## Extended Thinking with Anthropic Models
+
+Claude models support **extended thinking** - enhanced reasoning capabilities where Claude shows its step-by-step thought process before delivering the final answer.
+
+### Features Enabled
+
+**Interleaved Thinking** (Beta: `interleaved-thinking-2025-05-14`)
+- Claude can think **between tool calls**
+- Reasons about tool results before deciding what to do next
+- Chains multiple tool calls with reasoning steps in between
+- Only supported for Claude 4 models (Opus 4.5, Opus 4.1, Opus 4, Sonnet 4)
+
+**Current Configuration:**
+- `max_tokens`: 64,000 (maximum output limit for Claude models)
+- `thinking_budget`: 32,000 (32k for thinking, leaves 32k for final response)
+- Interleaved thinking: **Enabled by default**
+
+### How Thinking Appears in Responses
+
+Claude's responses include two types of content:
+
+1. **`delta.thinking`**: Claude's internal reasoning process (streaming)
+2. **`delta.content`**: The final answer/response (streaming)
+
+Example streaming output:
+```json
+// First: Thinking stream
+{"delta": {"thinking": "I need to calculate 27 * 453..."}}
+{"delta": {"thinking": "Let me break this down step by step..."}}
+{"delta": {"thinking": "27 * 400 = 10800, 27 * 50 = 1350..."}}
+
+// Then: Final response stream
+{"delta": {"content": "27 × 453 = **12,231**"}}
+```
+
+### Thinking with Tool Use
+
+When using tools (function calling), Claude will:
+1. Think about which tool to call
+2. Call the tool
+3. **Think about the tool result** (interleaved thinking)
+4. Decide next action or provide final answer
+
+This creates more sophisticated multi-step reasoning workflows.
+
+### Token Limits
+
+- `max_tokens`: Total limit for thinking + response combined
+- `thinking_budget`: Maximum tokens Claude can use for thinking
+- With interleaved thinking, `thinking_budget` represents the total across all thinking blocks in one turn
+- Actual thinking usage may be less than the budget
 
 ## Architecture
 
