@@ -60,6 +60,7 @@ class ModelRegistry:
                     truncation_strategy=model_data.get("truncation_strategy"),
                     max_tokens=model_data.get("max_tokens"),
                     base_url=model_data.get("base_url"),
+                    thinking_budget=model_data.get("thinking_budget"),
                     extra=model_data.get("extra"),
                 )
                 self._models[model_name] = config

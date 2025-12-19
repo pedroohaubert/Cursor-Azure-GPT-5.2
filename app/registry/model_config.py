@@ -21,6 +21,7 @@ class ModelConfig:
     # Anthropic-specific
     max_tokens: Optional[int] = None
     base_url: Optional[str] = None  # For Azure Foundry: https://xxx.openai.azure.com/anthropic
+    thinking_budget: Optional[int] = None  # Extended thinking budget in tokens
 
     # Common
     extra: Optional[Dict[str, Any]] = None

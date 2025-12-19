@@ -30,6 +30,58 @@ class AnthropicRequestAdapter:
 
         return "\n\n".join(system_parts) if system_parts else ""
 
+    def _convert_content(self, content: Any) -> Any:
+        """Convert OpenAI content format to Anthropic format.
+
+        Handles text, images, and mixed content arrays.
+        OpenAI image format: {"type": "image_url", "image_url": {"url": "data:..."}}
+        Anthropic image format: {"type": "image", "source": {"type": "base64", "media_type": "...", "data": "..."}}
+        """
+        if isinstance(content, str):
+            return content
+
+        if isinstance(content, list):
+            anthropic_content = []
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+
+                item_type = item.get("type")
+
+                if item_type == "text":
+                    anthropic_content.append(item)
+
+                elif item_type == "image_url":
+                    # Convert OpenAI image format to Anthropic
+                    image_url = item.get("image_url", {})
+                    url = image_url.get("url", "")
+
+                    if url.startswith("data:"):
+                        # Parse data URL: data:image/jpeg;base64,/9j/4AAQ...
+                        try:
+                            header, data = url.split(",", 1)
+                            media_type = header.split(":")[1].split(";")[0]
+
+                            anthropic_content.append({
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": data
+                                }
+                            })
+                        except (ValueError, IndexError):
+                            # Invalid data URL, skip
+                            pass
+
+                else:
+                    # Pass through other types (tool_result, etc.)
+                    anthropic_content.append(item)
+
+            return anthropic_content if anthropic_content else content
+
+        return content
+
     def _convert_messages(self, messages: List[Dict]) -> List[Dict]:
         """Convert OpenAI messages to Anthropic format.
 
@@ -52,7 +104,7 @@ class AnthropicRequestAdapter:
             if role in {"user", "assistant"}:
                 anthropic_messages.append({
                     "role": role,
-                    "content": content
+                    "content": self._convert_content(content)
                 })
             elif role == "tool":
                 # Tool responses in Anthropic format
@@ -126,15 +178,29 @@ class AnthropicRequestAdapter:
         payload = req.get_json(silent=True, force=False)
         messages = payload.get("messages", [])
 
+        # Determine max_tokens
+        # If thinking is enabled, max_tokens must be > thinking_budget
+        # max_tokens = thinking_budget + desired_response_tokens
+        thinking_budget = self.adapter.model_config.thinking_budget
+
+        if thinking_budget:
+            # User's requested output tokens (default to 16k if not specified)
+            requested_tokens = payload.get("max_tokens") or 16384
+            # Total must be thinking + response
+            total_max_tokens = thinking_budget + requested_tokens
+        else:
+            # No thinking, just use requested or default
+            total_max_tokens = (
+                payload.get("max_tokens") or
+                self.adapter.model_config.max_tokens or
+                16384
+            )
+
         # Build Anthropic request body
         anthropic_body = {
             "model": self.adapter.model_config.api_model,
             "messages": self._convert_messages(messages),
-            "max_tokens": (
-                payload.get("max_tokens") or
-                self.adapter.model_config.max_tokens or
-                8192
-            ),
+            "max_tokens": total_max_tokens,
             "stream": True,
         }
 
@@ -153,6 +219,13 @@ class AnthropicRequestAdapter:
         # Convert tools
         if tools := payload.get("tools"):
             anthropic_body["tools"] = self._convert_tools(tools)
+
+        # Add extended thinking if configured
+        if thinking_budget:
+            anthropic_body["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": thinking_budget
+            }
 
         # Get Anthropic API key from environment
         settings = current_app.config

@@ -71,7 +71,7 @@ class AnthropicResponseAdapter:
 
         Anthropic events:
         - message_start: Initial message metadata
-        - content_block_start: Start of content block (text or tool_use)
+        - content_block_start: Start of content block (text, tool_use, or thinking)
         - content_block_delta: Incremental content
         - content_block_stop: End of content block
         - message_delta: Message-level updates
@@ -86,7 +86,7 @@ class AnthropicResponseAdapter:
             )
 
         elif event_type == "content_block_start":
-            # Start of text or tool_use block
+            # Start of text, tool_use, or thinking block
             content_block = event.get("content_block", {})
             block_type = content_block.get("type")
 
@@ -108,6 +108,12 @@ class AnthropicResponseAdapter:
                     }
                 )
 
+            elif block_type == "thinking":
+                # Start of thinking block - send marker
+                return self._build_completion_chunk(
+                    delta={"thinking": ""}
+                )
+
             return None
 
         elif event_type == "content_block_delta":
@@ -118,6 +124,12 @@ class AnthropicResponseAdapter:
                 # Text content
                 return self._build_completion_chunk(
                     delta={"content": delta.get("text", "")}
+                )
+
+            elif delta_type == "thinking_delta":
+                # Thinking content - expose as separate field
+                return self._build_completion_chunk(
+                    delta={"thinking": delta.get("thinking", "")}
                 )
 
             elif delta_type == "input_json_delta":
