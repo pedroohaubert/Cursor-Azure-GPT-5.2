@@ -20,6 +20,7 @@ This proxy now supports multiple AI backends through a registry-based routing sy
 - Models: `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-haiku-4-5`
 - High-quality reasoning and coding models
 - Requires: `ANTHROPIC_API_KEY`
+- **Supports Azure AI Foundry**: Use custom `base_url` to route through Azure Foundry
 
 ## Configuration
 
@@ -48,8 +49,18 @@ models:
 
 **Anthropic models:**
 - `backend`: "anthropic"
-- `api_model`: Anthropic model ID (e.g., "claude-sonnet-4.5-20250514")
+- `api_model`: Anthropic model ID (e.g., "claude-sonnet-4.5-20250514") or deployment name (for Foundry)
 - `max_tokens`: (optional) Default max tokens (default: 8192)
+- `base_url`: (optional) Custom endpoint URL (for Azure AI Foundry: `https://xxx.openai.azure.com/anthropic`)
+
+**Example for Azure AI Foundry:**
+```yaml
+claude-haiku-4-5:
+  backend: anthropic
+  api_model: claude-haiku-4-5  # Foundry deployment name
+  base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
+  max_tokens: 8192
+```
 
 ## Environment Variables
 
@@ -60,8 +71,10 @@ AZURE_BASE_URL=https://your-resource.openai.azure.com
 AZURE_DEPLOYMENT=gpt-5
 AZURE_API_VERSION=2025-04-01-preview
 
-# Anthropic Backend
-ANTHROPIC_API_KEY=your-anthropic-key
+# Anthropic Backend (or Azure AI Foundry key)
+# For Azure AI Foundry: Use your Foundry API key (configured in models.yaml base_url)
+# For direct Anthropic: Use sk-ant-... key
+ANTHROPIC_API_KEY=your-anthropic-or-foundry-key
 
 # Model Registry
 MODEL_CONFIG_PATH=app/models.yaml  # optional, defaults to app/models.yaml

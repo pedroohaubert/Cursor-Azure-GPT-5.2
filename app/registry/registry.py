@@ -59,6 +59,7 @@ class ModelRegistry:
                     verbosity_level=model_data.get("verbosity_level"),
                     truncation_strategy=model_data.get("truncation_strategy"),
                     max_tokens=model_data.get("max_tokens"),
+                    base_url=model_data.get("base_url"),
                     extra=model_data.get("extra"),
                 )
                 self._models[model_name] = config

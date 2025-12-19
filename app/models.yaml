@@ -31,18 +31,24 @@ models:
     summary_level: detailed
     verbosity_level: medium
 
-  # Anthropic Claude models (to be implemented)
+  # Anthropic Claude models via Azure AI Foundry
+  # NOTE: base_url should point to your Azure Foundry endpoint
+  # Set ANTHROPIC_API_KEY to your Azure Foundry API key (not Anthropic direct API key)
+
+  claude-haiku-4-5:
+    backend: anthropic
+    api_model: claude-haiku-4-5  # This is the deployment_name in Foundry
+    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
+    max_tokens: 8192
+
   claude-sonnet-4-5:
     backend: anthropic
     api_model: claude-sonnet-4-5
+    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
     max_tokens: 8192
 
   claude-opus-4-5:
     backend: anthropic
     api_model: claude-opus-4-5
+    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
     max_tokens: 16384
-
-  claude-haiku-4-5:
-    backend: anthropic
-    api_model: claude-haiku-4-5
-    max_tokens: 8192

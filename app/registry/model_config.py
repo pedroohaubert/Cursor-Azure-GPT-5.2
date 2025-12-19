@@ -20,6 +20,7 @@ class ModelConfig:
 
     # Anthropic-specific
     max_tokens: Optional[int] = None
+    base_url: Optional[str] = None  # For Azure Foundry: https://xxx.openai.azure.com/anthropic
 
     # Common
     extra: Optional[Dict[str, Any]] = None

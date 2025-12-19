@@ -170,9 +170,19 @@ class AnthropicRequestAdapter:
             "content-type": "application/json",
         }
 
+        # Use custom base_url if provided (for Azure Foundry)
+        # Otherwise use default Anthropic API endpoint
+        base_url = self.adapter.model_config.base_url
+        if base_url:
+            # Azure Foundry format: https://xxx.openai.azure.com/anthropic
+            url = f"{base_url.rstrip('/')}/v1/messages"
+        else:
+            # Default Anthropic API
+            url = "https://api.anthropic.com/v1/messages"
+
         request_kwargs = {
             "method": "POST",
-            "url": "https://api.anthropic.com/v1/messages",
+            "url": url,
             "headers": headers,
             "json": anthropic_body,
             "stream": True,

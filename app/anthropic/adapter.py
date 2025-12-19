@@ -16,6 +16,10 @@ class AnthropicAdapter(BaseAdapter):
 
     Converts OpenAI Chat Completions format to Anthropic Messages API
     and streams responses back in OpenAI format.
+
+    Supports both:
+    - Direct Anthropic API (api.anthropic.com)
+    - Azure AI Foundry (custom base_url in model config)
     """
 
     def __init__(self, model_config: ModelConfig):

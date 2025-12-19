@@ -54,10 +54,11 @@ def test_anthropic_model_routing(client):
         )
 
         assert response.status_code == 200
-        # Verify Anthropic API was called
+        # Verify Anthropic API was called (through Foundry or direct)
         assert mock_request.called
         call_kwargs = mock_request.call_args[1]
-        assert "anthropic.com" in call_kwargs["url"]
+        # Check if URL contains either Foundry endpoint or direct Anthropic API
+        assert "anthropic" in call_kwargs["url"]  # Works for both endpoints
 
 
 def test_unknown_model_returns_error(client):
