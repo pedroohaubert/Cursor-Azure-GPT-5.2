@@ -198,11 +198,25 @@ class AnthropicRequestAdapter:
         # Determine max_tokens
         # max_tokens is the TOTAL limit (thinking + response combined)
         # thinking_budget is part of max_tokens, not additive
-        max_tokens = (
-            payload.get("max_tokens") or
-            self.adapter.model_config.max_tokens or
-            64000  # High default for long responses
-        )
+        # IMPORTANT: max_tokens MUST be > thinking_budget
+        requested_max_tokens = payload.get("max_tokens")
+        config_max_tokens = self.adapter.model_config.max_tokens or 64000
+        thinking_budget = self.adapter.model_config.thinking_budget or 0
+
+        # If thinking is enabled, ensure max_tokens > thinking_budget
+        if thinking_budget > 0:
+            # max_tokens must be greater than thinking_budget (not equal)
+            min_required_max_tokens = thinking_budget + 1000  # Add 1k tokens for response
+            if requested_max_tokens and requested_max_tokens < min_required_max_tokens:
+                current_app.logger.warning(
+                    f"[Anthropic Request] Requested max_tokens ({requested_max_tokens}) < "
+                    f"thinking_budget ({thinking_budget}). Using {config_max_tokens} instead."
+                )
+                max_tokens = config_max_tokens
+            else:
+                max_tokens = requested_max_tokens or config_max_tokens
+        else:
+            max_tokens = requested_max_tokens or config_max_tokens
 
         # Build Anthropic request body
         anthropic_body = {
