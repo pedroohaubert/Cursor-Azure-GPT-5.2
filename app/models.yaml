@@ -50,20 +50,20 @@ models:
   claude-haiku-4-5:
     backend: anthropic
     api_model: claude-haiku-4-5
-    api_format: responses  # Use OpenAI Responses API (better thinking + tools support!)
-    base_url: https://cyrela-ia-foundry.services.ai.azure.com/api/projects/cyrela-hub-chat/openai
+    api_format: messages  # Use OpenAI Responses API (better thinking + tools support!)
+    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
     max_tokens: 64000
 
   claude-sonnet-4-5:
     backend: anthropic
     api_model: claude-sonnet-4-5
-    api_format: responses  # Use OpenAI Responses API (better thinking + tools support!)
-    base_url: https://cyrela-ia-foundry.services.ai.azure.com/api/projects/cyrela-hub-chat/openai
+    api_format: messages  # Use OpenAI Responses API (better thinking + tools support!)
+    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
     max_tokens: 64000
 
   claude-opus-4-5:
     backend: anthropic
     api_model: claude-opus-4-5
-    api_format: responses  # Use OpenAI Responses API (better thinking + tools support!)
-    base_url: https://cyrela-ia-foundry.services.ai.azure.com/api/projects/cyrela-hub-chat/openai
+    api_format: messages  # Use OpenAI Responses API (better thinking + tools support!)
+    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
     max_tokens: 64000
