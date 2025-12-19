@@ -6,15 +6,44 @@ forwards incoming HTTP requests to the configured backend implementation.
 
 from flask import Blueprint, current_app, jsonify, request
 
+from .adapters.factory import AdapterFactory
 from .auth import require_auth
-from .azure.adapter import AzureAdapter
 from .common.logging import log_request
 from .common.recording import (
     increment_last_recording,
     init_last_recording,
     record_payload,
 )
-from .exceptions import ConfigurationError
+from .exceptions import ConfigurationError, ModelNotFoundError
+from .registry.registry import ModelRegistry
+
+# Global registry (initialized in app factory)
+_registry: ModelRegistry = None
+
+
+def init_registry(config_path: str) -> None:
+    """Initialize the global model registry.
+
+    Args:
+        config_path: Path to models.yaml configuration file
+    """
+    global _registry
+    _registry = ModelRegistry(config_path)
+
+
+def get_registry() -> ModelRegistry:
+    """Get the initialized model registry.
+
+    Returns:
+        ModelRegistry instance
+
+    Raises:
+        RuntimeError: If registry not initialized
+    """
+    if _registry is None:
+        raise RuntimeError("Model registry not initialized. Call init_registry() first.")
+    return _registry
+
 
 blueprint = Blueprint("blueprint", __name__)
 
@@ -40,18 +69,49 @@ def health():
 @blueprint.route("/<path:path>", methods=ALL_METHODS)
 @require_auth
 def catch_all(path: str):
-    """Forward any request path to the Azure backend.
+    """Forward any request path to the appropriate backend.
 
-    Logs the incoming request and forwards it to the selected backend
-    implementation, returning the backend's response. If forwarding fails,
-    returns a 502 JSON error payload.
+    Logs the incoming request, determines the model from the request,
+    looks up the configuration, creates the appropriate adapter,
+    and forwards to the backend. Returns a 400 error if model is not configured.
     """
     if current_app.config.get("LOG_CONTEXT"):
         log_request(request)
     init_last_recording()
     increment_last_recording()
+
+    # Extract model name from request
+    payload = request.get_json(silent=True, force=False)
+    model_name = payload.get("model") if isinstance(payload, dict) else None
+
+    if not model_name:
+        return jsonify({
+            "error": {
+                "message": "Missing 'model' field in request",
+                "type": "invalid_request_error",
+                "param": "model",
+                "code": None
+            }
+        }), 400
+
+    # Get model configuration
+    try:
+        registry = get_registry()
+        model_config = registry.get_model_config(model_name)
+    except ModelNotFoundError as e:
+        return jsonify({
+            "error": {
+                "message": str(e),
+                "type": "invalid_request_error",
+                "param": "model",
+                "code": "model_not_found"
+            }
+        }), 400
+
     record_payload(request.json, "downstream_request")
-    adapter = AzureAdapter()
+
+    # Create appropriate adapter and forward
+    adapter = AdapterFactory.create_adapter(model_config)
     return adapter.forward(request)
 
 
@@ -59,24 +119,21 @@ def catch_all(path: str):
 @blueprint.route("/v1/models", methods=["GET"])
 @require_auth
 def models():
-    """Return a list of available models."""
-    models = [
-        "gpt-high",
-        "gpt-medium",
-        "gpt-low",
-        "gpt-minimal",
-    ]
+    """Return a list of available models from registry."""
+    registry = get_registry()
+    model_list = registry.list_models()
+
     return jsonify(
         {
             "object": "list",
             "data": [
                 {
-                    "id": model,
+                    "id": model_name,
                     "object": "model",
                     "created": 1686935002,
-                    "owned_by": "openai",
+                    "owned_by": "system",
                 }
-                for model in models
+                for model_name in model_list
             ],
         }
     )

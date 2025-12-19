@@ -6,10 +6,18 @@ For local development, use a .env file to set
 environment variables.
 """
 
+import os
+
 from environs import Env
 
 env = Env()
 env.read_env()
+
+# Model registry configuration
+MODEL_CONFIG_PATH = env.str(
+    "MODEL_CONFIG_PATH",
+    default=os.path.join(os.path.dirname(__file__), "models.yaml")
+)
 
 ENV = env.str("FLASK_ENV", default="production")
 DEBUG = ENV == "development"

@@ -4,7 +4,7 @@ from flask import Flask
 from rich.traceback import install as install_rich_traceback
 
 from . import commands
-from .blueprint import blueprint
+from .blueprint import blueprint, init_registry
 
 
 def create_app(config_object="app.settings"):
@@ -15,9 +15,15 @@ def create_app(config_object="app.settings"):
     app = Flask(__name__.split(".")[0])
     app.config.from_object(config_object)
     configure_logging(app)
+    configure_registry(app)
     register_commands(app)
     register_blueprints(app)
     return app
+
+
+def configure_registry(app):
+    """Initialize the model registry."""
+    init_registry(app.config["MODEL_CONFIG_PATH"])
 
 
 def register_blueprints(app):

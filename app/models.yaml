@@ -5,28 +5,28 @@ models:
   # Azure GPT-5 models with reasoning efforts
   gpt-high:
     backend: azure
-    api_model: gpt-5
+    api_model: gpt-5.2
     reasoning_effort: high
     summary_level: detailed
     verbosity_level: medium
 
   gpt-medium:
     backend: azure
-    api_model: gpt-5
+    api_model: gpt-5.2
     reasoning_effort: medium
     summary_level: detailed
     verbosity_level: medium
 
   gpt-low:
     backend: azure
-    api_model: gpt-5
+    api_model: gpt-5.2
     reasoning_effort: low
     summary_level: detailed
     verbosity_level: medium
 
   gpt-minimal:
     backend: azure
-    api_model: gpt-5
+    api_model: gpt-5.2
     reasoning_effort: minimal
     summary_level: detailed
     verbosity_level: medium
@@ -34,10 +34,15 @@ models:
   # Anthropic Claude models (to be implemented)
   claude-sonnet-4-5:
     backend: anthropic
-    api_model: claude-sonnet-4.5-20250514
+    api_model: claude-sonnet-4-5
     max_tokens: 8192
 
   claude-opus-4-5:
     backend: anthropic
-    api_model: claude-opus-4.5-20251101
+    api_model: claude-opus-4-5
     max_tokens: 16384
+
+  claude-haiku-4-5:
+    backend: anthropic
+    api_model: claude-haiku-4-5
+    max_tokens: 8192

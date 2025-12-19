@@ -24,6 +24,21 @@ class TestModels:
         assert '"gpt-low"' in content
         assert '"gpt-minimal"' in content
 
+    def test_models_endpoint_returns_configured_models(self, testapp):
+        """Test /models endpoint returns models from registry."""
+        response = testapp.get(
+            "/models",
+            status=200,
+            headers={"Authorization": "Bearer test-service-api-key"},
+        )
+        data = response.json
+        assert data["object"] == "list"
+
+        model_ids = [m["id"] for m in data["data"]]
+        assert "gpt-high" in model_ids
+        assert "gpt-medium" in model_ids
+        assert "claude-sonnet-4-5" in model_ids
+
     def test_health_endpoint_returns_200(self, testapp):
         """Ensure /health endpoint returns HTTP 200 without auth."""
         testapp.get("/health", status=200)
