@@ -269,11 +269,28 @@ class AnthropicRequestAdapter:
             )
 
         # Add extended thinking if configured
+        # BUT: Disable thinking when tool_use/tool_result are present in messages
+        # because Anthropic API requires thinking blocks to precede tool_use blocks,
+        # and Cursor doesn't send thinking blocks in multi-turn conversations
+        has_tool_messages = any(
+            msg.get("role") == "tool" or
+            msg.get("tool_calls") or
+            (isinstance(msg.get("content"), list) and
+             any(item.get("type") in ["tool_use", "tool_result"]
+                 for item in msg.get("content", []) if isinstance(item, dict)))
+            for msg in messages
+        )
+
         if thinking_budget := self.adapter.model_config.thinking_budget:
-            anthropic_body["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget
-            }
+            if has_tool_messages:
+                current_app.logger.warning(
+                    "[Anthropic Request] Disabling extended thinking due to tool messages in conversation"
+                )
+            else:
+                anthropic_body["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": thinking_budget
+                }
 
         # Get Anthropic API key from environment
         settings = current_app.config
