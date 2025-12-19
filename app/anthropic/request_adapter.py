@@ -224,22 +224,37 @@ class AnthropicRequestAdapter:
         if "top_p" in payload:
             anthropic_body["top_p"] = payload["top_p"]
 
-        # Convert tools - auto-inject Cursor Code tools if none provided
+        # Convert tools - auto-inject Cursor Code tools if none provided or malformed
         tools = payload.get("tools")
         current_app.logger.info(
             f"[Anthropic Request] Tools before auto-inject: {len(tools) if tools else 0} tools"
         )
 
-        if not tools:
-            # Auto-inject standard Cursor Code tools when missing
+        # Validate tools - check if they have valid names
+        valid_tools = False
+        if tools:
+            # Check if at least one tool has a valid name
+            for tool in tools:
+                if isinstance(tool, dict):
+                    function = tool.get("function", {})
+                    if isinstance(function, dict) and function.get("name"):
+                        valid_tools = True
+                        break
+
+        if not tools or not valid_tools:
+            # Auto-inject standard Cursor Code tools when missing or malformed
             # This prevents Claude from outputting XML tags instead of tool_use blocks
+            if tools and not valid_tools:
+                current_app.logger.warning(
+                    f"[Anthropic Request] Detected {len(tools)} MALFORMED tools (all have name=None)!"
+                )
             current_app.logger.warning(
                 f"[Anthropic Request] AUTO-INJECTING {len(CURSOR_CODE_TOOLS)} Cursor Code standard tools!"
             )
             tools = CURSOR_CODE_TOOLS
         else:
             current_app.logger.info(
-                f"[Anthropic Request] Using {len(tools)} tools from request (no auto-inject needed)"
+                f"[Anthropic Request] Using {len(tools)} valid tools from request (no auto-inject needed)"
             )
 
         if tools:
