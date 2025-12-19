@@ -9,15 +9,17 @@ from typing import Optional
 import requests
 from flask import Request, Response
 
+from ..adapters.base import BaseAdapter
 from ..common.logging import console
 from ..common.recording import record_payload
+from ..registry.model_config import ModelConfig
 
 # Local adapters
 from .request_adapter import RequestAdapter
 from .response_adapter import ResponseAdapter
 
 
-class AzureAdapter:
+class AzureAdapter(BaseAdapter):
     """Orchestrate forwarding of a Flask Request to Azure's Responses API.
 
     Provides a Completions-compatible interface to the caller by composing a
@@ -26,11 +28,13 @@ class AzureAdapter:
     instance for shared per-request state (models).
     """
 
-    # Per-request state (streaming completions only)
-    inbound_model: Optional[str] = None
+    def __init__(self, model_config: ModelConfig) -> None:
+        """Initialize child adapters with model configuration.
 
-    def __init__(self) -> None:
-        """Initialize child adapters and shared state references."""
+        Args:
+            model_config: Configuration for this Azure model
+        """
+        super().__init__(model_config)
         # Composition: child adapters get a reference to this orchestrator
         self.request_adapter = RequestAdapter(self)
         self.response_adapter = ResponseAdapter(self)
@@ -45,7 +49,7 @@ class AzureAdapter:
         2) Perform the upstream HTTP call using a short-lived requests call.
         3) ResponseAdapter converts the upstream response into a Flask Response.
         """
-        request_kwargs = self.request_adapter.adapt(req)
+        request_kwargs = self.adapt_request(req)
 
         record_payload(request_kwargs.get("json", {}), "upstream_request")
 
@@ -54,7 +58,29 @@ class AzureAdapter:
         if resp.status_code != 200:
             return self._handle_azure_error(resp, request_kwargs)
 
-        return self.response_adapter.adapt(resp)
+        return self.adapt_response(resp)
+
+    def adapt_request(self, req: Request) -> dict:
+        """Adapt OpenAI request to Azure Responses API format.
+
+        Args:
+            req: Flask request with OpenAI Chat Completions format
+
+        Returns:
+            Dict suitable for requests.request(**kwargs)
+        """
+        return self.request_adapter.adapt(req)
+
+    def adapt_response(self, backend_response) -> Response:
+        """Adapt Azure streaming response to OpenAI format.
+
+        Args:
+            backend_response: requests.Response from Azure Responses API
+
+        Returns:
+            Flask Response with OpenAI Chat Completions chunks
+        """
+        return self.response_adapter.adapt(backend_response)
 
     def _handle_azure_error(self, resp: Response, request_kwargs) -> Response:
 

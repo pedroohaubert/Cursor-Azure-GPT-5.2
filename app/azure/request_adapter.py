@@ -188,15 +188,8 @@ class RequestAdapter:
         Maps inputs to the Responses schema and returns a dict suitable for
         requests.request(**kwargs).
         """
-        # Reset per-request state
-        self.adapter.inbound_model = None
-
         # Parse request body
         payload = req.get_json(silent=True, force=False)
-
-        # Determine target model: prefer env AZURE_MODEL/AZURE_DEPLOYMENT
-        inbound_model = payload.get("model") if isinstance(payload, dict) else None
-        self.adapter.inbound_model = inbound_model
 
         settings = current_app.config
 
@@ -213,7 +206,10 @@ class RequestAdapter:
             else {"input": None, "instructions": None}
         )
 
-        responses_body["model"] = settings["AZURE_DEPLOYMENT"]
+        # Use deployment name from config or fall back to env var
+        responses_body["model"] = (
+            self.adapter.model_config.deployment_name or settings["AZURE_DEPLOYMENT"]
+        )
 
         # Transform tools and tool choice
         responses_body["tools"] = self._transform_tools_for_responses(
@@ -226,36 +222,45 @@ class RequestAdapter:
         # Always streaming
         responses_body["stream"] = True
 
-        reasoning_effort = inbound_model.replace("gpt-", "").lower()
-        if reasoning_effort not in {"high", "medium", "low", "minimal"}:
+        # Get reasoning effort from model config
+        reasoning_effort = self.adapter.model_config.reasoning_effort
+        if not reasoning_effort:
             raise CursorConfigurationError(
-                "Model name must be either gpt-high, gpt-medium, gpt-low, or gpt-minimal."
-                f"\n\nGot: {inbound_model}"
+                f"Model '{self.adapter.model_config.name}' is missing reasoning_effort configuration"
             )
 
         responses_body["reasoning"] = {
             "effort": reasoning_effort,
         }
 
-        # Concise is not supported by GPT-5,
-        # but allowing it for now to be able to test it on other models
-        if settings["AZURE_SUMMARY_LEVEL"] in {"auto", "detailed", "concise"}:
-            responses_body["reasoning"]["summary"] = settings["AZURE_SUMMARY_LEVEL"]
+        # Use summary level from model config or fall back to env var
+        summary_level = (
+            self.adapter.model_config.summary_level or settings["AZURE_SUMMARY_LEVEL"]
+        )
+        if summary_level in {"auto", "detailed", "concise"}:
+            responses_body["reasoning"]["summary"] = summary_level
         else:
             raise ServiceConfigurationError(
-                "AZURE_SUMMARY_LEVEL must be either auto, detailed, or concise."
-                f"\n\nGot: {settings['AZURE_SUMMARY_LEVEL']}"
+                "summary_level must be either auto, detailed, or concise."
+                f"\n\nGot: {summary_level}"
             )
 
-        # No need to pass verbosity if it's set to medium, as it's the model's default
-        if settings["AZURE_VERBOSITY_LEVEL"] in {"low", "high"}:
-            responses_body["text"] = {"verbosity": settings["AZURE_VERBOSITY_LEVEL"]}
+        # Use verbosity level from model config or fall back to env var
+        verbosity_level = (
+            self.adapter.model_config.verbosity_level or settings["AZURE_VERBOSITY_LEVEL"]
+        )
+        if verbosity_level in {"low", "high"}:
+            responses_body["text"] = {"verbosity": verbosity_level}
 
         responses_body["store"] = False
         responses_body["stream_options"] = {"include_obfuscation": False}
 
-        if settings["AZURE_TRUNCATION"] == "auto":
-            responses_body["truncation"] = settings["AZURE_TRUNCATION"]
+        # Use truncation strategy from model config or fall back to env var
+        truncation = (
+            self.adapter.model_config.truncation_strategy or settings["AZURE_TRUNCATION"]
+        )
+        if truncation == "auto":
+            responses_body["truncation"] = truncation
 
         request_kwargs: Dict[str, Any] = {
             "method": "POST",
