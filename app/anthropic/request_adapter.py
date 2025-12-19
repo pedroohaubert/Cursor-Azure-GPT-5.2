@@ -2,6 +2,8 @@
 from typing import Any, Dict, List
 from flask import Request, current_app
 
+from .cursor_tools import CURSOR_CODE_TOOLS
+
 
 class AnthropicRequestAdapter:
     """Convert OpenAI Chat Completions requests to Anthropic Messages API format."""
@@ -178,6 +180,29 @@ class AnthropicRequestAdapter:
         payload = req.get_json(silent=True, force=False)
         messages = payload.get("messages", [])
 
+        # DEBUG: Log whether tools are present in request
+        tools_in_request = payload.get("tools", [])
+        current_app.logger.info(
+            f"[Anthropic Request] Tools in request: {len(tools_in_request) if tools_in_request else 0}"
+        )
+        current_app.logger.info(
+            f"[Anthropic Request] Request keys: {list(payload.keys())}"
+        )
+        # Check for any tool-related info in system messages
+        system_msg = self._extract_system_messages(messages)
+        if system_msg and not tools_in_request:
+            has_tool_keywords = any(keyword in system_msg.lower() for keyword in
+                                   ['<tool', 'function', 'tool_use', 'available tools'])
+            if has_tool_keywords:
+                current_app.logger.warning(
+                    "[Anthropic Request] Tool keywords found in system message but no tools in request!"
+                )
+
+        if not tools_in_request:
+            current_app.logger.warning(
+                "[Anthropic Request] No tools found in request - Claude may output XML tags instead of tool_use blocks"
+            )
+
         # Determine max_tokens
         # max_tokens is the TOTAL limit (thinking + response combined)
         # thinking_budget is part of max_tokens, not additive
@@ -207,8 +232,17 @@ class AnthropicRequestAdapter:
         if "top_p" in payload:
             anthropic_body["top_p"] = payload["top_p"]
 
-        # Convert tools
-        if tools := payload.get("tools"):
+        # Convert tools - auto-inject Cursor Code tools if none provided
+        tools = payload.get("tools")
+        if not tools:
+            # Auto-inject standard Cursor Code tools when missing
+            # This prevents Claude from outputting XML tags instead of tool_use blocks
+            current_app.logger.info(
+                "[Anthropic Request] Auto-injecting Cursor Code standard tools"
+            )
+            tools = CURSOR_CODE_TOOLS
+
+        if tools:
             anthropic_body["tools"] = self._convert_tools(tools)
 
         # Add extended thinking if configured

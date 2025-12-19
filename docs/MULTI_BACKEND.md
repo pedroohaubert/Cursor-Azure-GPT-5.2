@@ -151,6 +151,16 @@ Returns:
 }
 ```
 
+## Cursor Code / Claude Code Integration
+
+When using this proxy with Cursor Code or Claude Code, the proxy automatically handles tool calling:
+
+**Auto-Tool Injection**: If Cursor doesn't send tools in the API request, the proxy automatically injects Cursor Code's standard tools (Read, Write, Edit, Bash, Glob, Grep, TodoWrite, Task, AskUserQuestion). This prevents Claude from outputting XML tags and ensures proper `tool_use` blocks are returned.
+
+**Why this is needed**: Some clients may not send tools in every request, causing Claude to fall back to legacy XML tag format. The auto-injection ensures Claude always knows which tools are available and returns properly formatted tool calls.
+
+**Logging**: Enhanced logging shows when tools are auto-injected and tracks tool_calls in response logs for better debugging.
+
 ## Extended Thinking with Anthropic Models
 
 Claude models support **extended thinking** - enhanced reasoning capabilities where Claude shows its step-by-step thought process before delivering the final answer.

@@ -214,6 +214,28 @@ class AnthropicResponseAdapter:
                                     delta = chunk_dict.get("choices", [{}])[0].get("delta", {})
                                     if "content" in delta:
                                         completion_msg["content"] += delta["content"]
+                                    # Track tool_calls for logging
+                                    if "tool_calls" in delta:
+                                        for tool_call_delta in delta["tool_calls"]:
+                                            idx = tool_call_delta.get("index", 0)
+                                            # Ensure we have enough slots
+                                            while len(completion_msg["tool_calls"]) <= idx:
+                                                completion_msg["tool_calls"].append({
+                                                    "id": "",
+                                                    "type": "function",
+                                                    "function": {"name": "", "arguments": ""}
+                                                })
+                                            # Update the tool call
+                                            if "id" in tool_call_delta:
+                                                completion_msg["tool_calls"][idx]["id"] = tool_call_delta["id"]
+                                            if "type" in tool_call_delta:
+                                                completion_msg["tool_calls"][idx]["type"] = tool_call_delta["type"]
+                                            if "function" in tool_call_delta:
+                                                func_delta = tool_call_delta["function"]
+                                                if "name" in func_delta:
+                                                    completion_msg["tool_calls"][idx]["function"]["name"] = func_delta["name"]
+                                                if "arguments" in func_delta:
+                                                    completion_msg["tool_calls"][idx]["function"]["arguments"] += func_delta["arguments"]
 
                     # Send final chunk if no finish_reason was sent
                     if events > 0:
