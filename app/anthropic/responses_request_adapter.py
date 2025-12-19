@@ -2,6 +2,15 @@
 from typing import Any, Dict, List
 from flask import Request, current_app
 
+try:
+    from azure.identity import DefaultAzureCredential
+    from azure.core.credentials import AccessToken
+    AZURE_IDENTITY_AVAILABLE = True
+except ImportError:
+    AZURE_IDENTITY_AVAILABLE = False
+    DefaultAzureCredential = None
+    AccessToken = None
+
 
 class AnthropicResponsesRequestAdapter:
     """Convert OpenAI Chat Completions requests to OpenAI Responses API format for Claude models.
@@ -15,6 +24,41 @@ class AnthropicResponsesRequestAdapter:
     def __init__(self, adapter: Any):
         """Initialize with reference to parent AnthropicAdapter."""
         self.adapter = adapter
+        self._credential = None
+        self._token_cache = None
+
+    def _get_bearer_token(self) -> str:
+        """Get Azure AD bearer token for Responses API authentication.
+
+        Uses DefaultAzureCredential with scope https://ai.azure.com/.default
+        This requires azure-identity package and Azure CLI login (az login).
+        """
+        if not AZURE_IDENTITY_AVAILABLE:
+            from ..exceptions import ServiceConfigurationError
+            raise ServiceConfigurationError(
+                "azure-identity package is required for Responses API. "
+                "Install with: pip install azure-identity"
+            )
+
+        # Initialize credential if needed
+        if self._credential is None:
+            self._credential = DefaultAzureCredential()
+
+        # Get token with AI Foundry scope
+        scope = "https://ai.azure.com/.default"
+
+        try:
+            token = self._credential.get_token(scope)
+            current_app.logger.debug(
+                f"[Claude Responses API] Obtained Azure AD token (expires: {token.expires_on})"
+            )
+            return token.token
+        except Exception as e:
+            from ..exceptions import ServiceConfigurationError
+            raise ServiceConfigurationError(
+                f"Failed to obtain Azure AD token. Make sure you're logged in with 'az login'. "
+                f"Error: {e}"
+            )
 
     def _convert_messages_to_input(self, messages: List[Dict]) -> str:
         """Convert OpenAI messages to simple text input for Responses API.
@@ -68,14 +112,8 @@ class AnthropicResponsesRequestAdapter:
         payload = req.get_json(silent=True, force=False)
         messages = payload.get("messages", [])
 
-        # Get Anthropic API key from environment
-        settings = current_app.config
-        api_key = settings.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            from ..exceptions import ServiceConfigurationError
-            raise ServiceConfigurationError(
-                "ANTHROPIC_API_KEY not set in environment"
-            )
+        # Get Azure AD bearer token for Responses API
+        bearer_token = self._get_bearer_token()
 
         # Build OpenAI Responses API request body
         responses_body = {
@@ -126,7 +164,7 @@ class AnthropicResponsesRequestAdapter:
         url = f"{base_url.rstrip('/')}/responses"
 
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {bearer_token}",
             "Content-Type": "application/json",
         }
 

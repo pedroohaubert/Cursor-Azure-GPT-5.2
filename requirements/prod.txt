@@ -19,3 +19,7 @@ supervisor==4.3.0
 environs==14.5.0
 pyyaml>=6.0.1
 anthropic>=0.42.0
+
+# Azure authentication (for Responses API with Claude)
+azure-identity>=1.18.0
+azure-core>=1.30.0
