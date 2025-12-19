@@ -1,0 +1,30 @@
+"""Model configuration dataclass."""
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
+
+
+@dataclass
+class ModelConfig:
+    """Configuration for a single model."""
+
+    name: str
+    backend: str  # "azure" or "anthropic"
+    api_model: str
+
+    # Azure-specific
+    reasoning_effort: Optional[str] = None
+    deployment_name: Optional[str] = None
+    summary_level: Optional[str] = None
+    verbosity_level: Optional[str] = None
+    truncation_strategy: Optional[str] = None
+
+    # Anthropic-specific
+    max_tokens: Optional[int] = None
+
+    # Common
+    extra: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        if self.backend not in {"azure", "anthropic"}:
+            raise ValueError(f"Unsupported backend: {self.backend}")

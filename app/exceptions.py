@@ -30,3 +30,8 @@ class ClientClosedConnection(Exception):  # noqa: N818
 
     This helps distinguish client disconnects from other server-side errors.
     """
+
+
+class ModelNotFoundError(ValueError):
+    """Exception raised when requested model is not in configuration."""
+    pass
