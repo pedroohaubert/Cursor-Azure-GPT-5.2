@@ -32,27 +32,38 @@ models:
     verbosity_level: medium
 
   # Anthropic Claude models via Azure AI Foundry
-  # NOTE: base_url should point to your Azure Foundry endpoint
-  # Set ANTHROPIC_API_KEY to your Azure Foundry API key (not Anthropic direct API key)
-  # Extended thinking enabled - thinking_budget is part of max_tokens (not additive)
+  # IMPORTANT: Now using OpenAI Responses API format instead of Messages API
+  # This should solve thinking + tool calls issues!
+  #
+  # API Format: "responses" (uses OpenAI Responses API - better tool/thinking support)
+  #            "messages" (uses Anthropic Messages API - legacy, has thinking limitations)
+  #
+  # Base URL for Responses API should be:
+  #   https://<project>.services.ai.azure.com/api/projects/<project-name>/openai
+  # (The adapter will add /responses to this URL)
+  #
+  # IMPORTANT: Only available in East US 2 and Sweden Central regions!
+  # If your Foundry project is in another region, use api_format: messages instead.
+  #
+  # Set ANTHROPIC_API_KEY to your Azure Foundry API key
 
   claude-haiku-4-5:
     backend: anthropic
-    api_model: claude-haiku-4-5  # This is the deployment_name in Foundry
-    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
-    max_tokens: 64000  # Maximum output tokens for Haiku
-    thinking_budget: 32000  # 32k for thinking, leaves 32k for response
+    api_model: claude-haiku-4-5
+    api_format: responses  # Use OpenAI Responses API (better thinking + tools support!)
+    base_url: https://cyrela-ia-foundry.services.ai.azure.com/api/projects/cyrela-hub-chat/openai
+    max_tokens: 64000
 
   claude-sonnet-4-5:
     backend: anthropic
     api_model: claude-sonnet-4-5
-    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
-    max_tokens: 64000  # Maximum output tokens for Sonnet
-    thinking_budget: 32000  # 32k for thinking, leaves 32k for response
+    api_format: responses  # Use OpenAI Responses API (better thinking + tools support!)
+    base_url: https://cyrela-ia-foundry.services.ai.azure.com/api/projects/cyrela-hub-chat/openai
+    max_tokens: 64000
 
   claude-opus-4-5:
     backend: anthropic
     api_model: claude-opus-4-5
-    base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
-    max_tokens: 64000  # Maximum output tokens for Opus
-    thinking_budget: 32000  # 32k for thinking, leaves 32k for response
+    api_format: responses  # Use OpenAI Responses API (better thinking + tools support!)
+    base_url: https://cyrela-ia-foundry.services.ai.azure.com/api/projects/cyrela-hub-chat/openai
+    max_tokens: 64000

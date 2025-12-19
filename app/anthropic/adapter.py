@@ -1,4 +1,4 @@
-"""Anthropic adapter for Messages API."""
+"""Anthropic adapter supporting both Messages API and Responses API."""
 import requests
 from flask import Request, Response
 
@@ -9,13 +9,16 @@ from ..registry.model_config import ModelConfig
 
 from .request_adapter import AnthropicRequestAdapter
 from .response_adapter import AnthropicResponseAdapter
+from .responses_request_adapter import AnthropicResponsesRequestAdapter
+from .responses_response_adapter import AnthropicResponsesResponseAdapter
 
 
 class AnthropicAdapter(BaseAdapter):
-    """Adapter for Anthropic Messages API.
+    """Adapter for Anthropic models via Messages API or Responses API.
 
-    Converts OpenAI Chat Completions format to Anthropic Messages API
-    and streams responses back in OpenAI format.
+    Converts OpenAI Chat Completions format to either:
+    - Anthropic Messages API (api_format="messages" or not specified)
+    - OpenAI Responses API with Claude models (api_format="responses")
 
     Supports both:
     - Direct Anthropic API (api.anthropic.com)
@@ -23,10 +26,24 @@ class AnthropicAdapter(BaseAdapter):
     """
 
     def __init__(self, model_config: ModelConfig):
-        """Initialize Anthropic adapter with model configuration."""
+        """Initialize Anthropic adapter with model configuration.
+
+        Chooses between Messages API and Responses API adapters based on
+        api_format configuration.
+        """
         super().__init__(model_config)
-        self.request_adapter = AnthropicRequestAdapter(self)
-        self.response_adapter = AnthropicResponseAdapter(self)
+
+        # Choose adapters based on api_format
+        api_format = model_config.api_format or "messages"  # Default to messages
+
+        if api_format == "responses":
+            # Use OpenAI Responses API format
+            self.request_adapter = AnthropicResponsesRequestAdapter(self)
+            self.response_adapter = AnthropicResponsesResponseAdapter(self)
+        else:
+            # Use Anthropic Messages API format (default)
+            self.request_adapter = AnthropicRequestAdapter(self)
+            self.response_adapter = AnthropicResponseAdapter(self)
 
     def forward(self, req: Request) -> Response:
         """Forward request to Anthropic API and return adapted response."""

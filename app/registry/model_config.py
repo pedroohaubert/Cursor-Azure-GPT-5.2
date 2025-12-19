@@ -22,6 +22,7 @@ class ModelConfig:
     max_tokens: Optional[int] = None
     base_url: Optional[str] = None  # For Azure Foundry: https://xxx.openai.azure.com/anthropic
     thinking_budget: Optional[int] = None  # Extended thinking budget in tokens
+    api_format: Optional[str] = None  # "messages" (default) or "responses" for OpenAI Responses API
 
     # Common
     extra: Optional[Dict[str, Any]] = None
