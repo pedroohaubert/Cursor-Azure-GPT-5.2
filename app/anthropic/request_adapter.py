@@ -256,19 +256,20 @@ class AnthropicRequestAdapter:
                         break
 
         if not tools or not valid_tools:
-            # Auto-inject standard Cursor Code tools when missing or malformed
-            # This prevents Claude from outputting XML tags instead of tool_use blocks
+            # TEMPORARY: Auto-injection disabled for testing
+            # Malformed tools from Cursor may be causing issues
             if tools and not valid_tools:
                 current_app.logger.warning(
-                    f"[Anthropic Request] Detected {len(tools)} MALFORMED tools (all have name=None)!"
+                    f"[Anthropic Request] Detected {len(tools)} MALFORMED tools (all have name=None) - NOT injecting"
                 )
-            current_app.logger.warning(
-                f"[Anthropic Request] AUTO-INJECTING {len(CURSOR_CODE_TOOLS)} Cursor Code standard tools!"
-            )
-            tools = CURSOR_CODE_TOOLS
+            else:
+                current_app.logger.warning(
+                    "[Anthropic Request] No valid tools in request - NOT injecting (testing without auto-inject)"
+                )
+            tools = None  # Don't send any tools if they're malformed
         else:
             current_app.logger.info(
-                f"[Anthropic Request] Using {len(tools)} valid tools from request (no auto-inject needed)"
+                f"[Anthropic Request] Using {len(tools)} valid tools from request"
             )
 
         if tools:
@@ -283,12 +284,28 @@ class AnthropicRequestAdapter:
             )
 
         # Add extended thinking if configured
-        # With interleaved thinking disabled, we can use extended thinking even with tools
+        # BUT: Disable in multi-turn conversations with tool results
+        # The API requires thinking blocks from previous turns, which Cursor doesn't send
+        has_tool_results = any(
+            msg.get("role") == "tool" or
+            (isinstance(msg.get("content"), list) and
+             any(item.get("type") == "tool_result"
+                 for item in msg.get("content", []) if isinstance(item, dict)))
+            for msg in messages
+        )
+
         if thinking_budget := self.adapter.model_config.thinking_budget:
-            anthropic_body["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget
-            }
+            if has_tool_results:
+                current_app.logger.warning(
+                    "[Anthropic Request] Disabling extended thinking - multi-turn tool conversation "
+                    "detected (Cursor doesn't preserve thinking blocks from previous turns)"
+                )
+            else:
+                # First turn or no tools - thinking works fine
+                anthropic_body["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": thinking_budget
+                }
 
         # Get Anthropic API key from environment
         settings = current_app.config
