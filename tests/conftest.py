@@ -29,6 +29,12 @@ def testapp(app) -> TestApp:
     return TestApp(app)
 
 
+@pytest.fixture
+def client(app):
+    """Create Flask test client."""
+    return app.test_client()
+
+
 def create_test_azure_config(reasoning_effort="high"):
     """Create test Azure model configuration."""
     return ModelConfig(
