@@ -25,3 +25,6 @@ LOG_COMPLETION = True
 AZURE_RESPONSES_API_URL = (
     f"{AZURE_BASE_URL}/openai/responses?api-version={AZURE_API_VERSION}"
 )
+
+# Anthropic configuration
+ANTHROPIC_API_KEY = "test-anthropic-key"

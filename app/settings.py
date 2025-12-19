@@ -39,3 +39,6 @@ AZURE_TRUNCATION = env.str("AZURE_TRUNCATION") or "disabled"
 AZURE_RESPONSES_API_URL = (
     f"{AZURE_BASE_URL}/openai/responses?api-version={AZURE_API_VERSION}"
 )
+
+# Anthropic configuration
+ANTHROPIC_API_KEY = env.str("ANTHROPIC_API_KEY", "")
