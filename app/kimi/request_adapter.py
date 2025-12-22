@@ -77,7 +77,7 @@ class KimiRequestAdapter:
         url = f"{base_url.rstrip('/')}/chat/completions?api-version=2024-05-01-preview"
 
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "api-key": api_key,
             "Content-Type": "application/json",
         }
 
