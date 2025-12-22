@@ -28,6 +28,3 @@ AZURE_RESPONSES_API_URL = (
 
 # Anthropic configuration
 ANTHROPIC_API_KEY = "test-anthropic-key"
-
-# Kimi configuration
-KIMI_API_KEY = "test-kimi-key"

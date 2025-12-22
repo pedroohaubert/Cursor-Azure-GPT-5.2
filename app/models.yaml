@@ -70,7 +70,7 @@ models:
 
   # Kimi models via Azure AI Foundry
   # Uses OpenAI Chat Completions API natively
-  # Set KIMI_API_KEY to your Azure Foundry API key
+  # Uses AZURE_API_KEY (same as other Azure Foundry models)
   kimi-k2-thinking:
     backend: kimi
     api_model: Kimi-K2-Thinking

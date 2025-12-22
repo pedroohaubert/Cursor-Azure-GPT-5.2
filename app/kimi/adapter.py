@@ -58,7 +58,7 @@ class KimiAdapter(BaseAdapter):
 
         error_message = (
             f"Kimi API error (status {resp.status_code}): {resp_content}\n"
-            "Check your KIMI_API_KEY and model configuration."
+            "Check your AZURE_API_KEY and model configuration."
         )
 
         return Response(

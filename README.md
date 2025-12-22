@@ -37,9 +37,8 @@ See [docs/MULTI_BACKEND.md](docs/MULTI_BACKEND.md) for detailed configuration an
 1. Configure your models in `app/models.yaml`
 2. Set API keys in `.env`:
    ```bash
-   ANTHROPIC_API_KEY=your-key
-   AZURE_API_KEY=your-key
-   KIMI_API_KEY=your-key
+   ANTHROPIC_API_KEY=your-key  # For Claude models (if using Anthropic direct API)
+   AZURE_API_KEY=your-key      # For GPT, Claude, and Kimi models via Azure Foundry
    ```
 3. Use any configured model by name:
    ```bash

@@ -25,13 +25,13 @@ class KimiRequestAdapter:
         """
         payload = req.get_json(silent=True, force=False)
 
-        # Get API key from environment
+        # Get API key from environment (uses same Azure Foundry key)
         settings = current_app.config
-        api_key = settings.get("KIMI_API_KEY")
+        api_key = settings.get("AZURE_API_KEY")
         if not api_key:
             from ..exceptions import ServiceConfigurationError
             raise ServiceConfigurationError(
-                "KIMI_API_KEY not set in environment"
+                "AZURE_API_KEY not set in environment"
             )
 
         # Build request body - mostly pass-through with model name mapping
