@@ -28,6 +28,7 @@ This proxy now supports multiple AI backends with a unified OpenAI-compatible in
 
 - **Azure OpenAI Responses API**: GPT-5 reasoning models with configurable effort levels
 - **Anthropic Messages API**: Claude Sonnet and Opus models
+- **Kimi Chat Completions API**: Kimi-K2-Thinking reasoning model
 
 See [docs/MULTI_BACKEND.md](docs/MULTI_BACKEND.md) for detailed configuration and usage.
 
@@ -38,11 +39,12 @@ See [docs/MULTI_BACKEND.md](docs/MULTI_BACKEND.md) for detailed configuration an
    ```bash
    ANTHROPIC_API_KEY=your-key
    AZURE_API_KEY=your-key
+   KIMI_API_KEY=your-key
    ```
 3. Use any configured model by name:
    ```bash
    curl -X POST http://localhost:5000/chat/completions \
-     -d '{"model": "claude-sonnet-4-5", "messages": [...]}'
+     -d '{"model": "kimi-k2-thinking", "messages": [...]}'
    ```
 
 ## Supported Models
