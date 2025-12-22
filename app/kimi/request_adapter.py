@@ -70,11 +70,11 @@ class KimiRequestAdapter:
             from ..exceptions import ServiceConfigurationError
             raise ServiceConfigurationError(
                 "base_url must be set for Kimi models "
-                "(e.g., https://xxx.openai.azure.com/openai/v1)"
+                "(e.g., https://xxx.cognitiveservices.azure.com/openai/deployments/Kimi-K2-Thinking)"
             )
 
-        # Endpoint is /chat/completions
-        url = f"{base_url.rstrip('/')}/chat/completions"
+        # Endpoint is /chat/completions with api-version
+        url = f"{base_url.rstrip('/')}/chat/completions?api-version=2024-05-01-preview"
 
         headers = {
             "Authorization": f"Bearer {api_key}",

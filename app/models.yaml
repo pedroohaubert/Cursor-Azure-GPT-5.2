@@ -74,5 +74,5 @@ models:
   kimi-k2-thinking:
     backend: kimi
     api_model: Kimi-K2-Thinking
-    base_url: https://cyrela-ia-foundry.openai.azure.com/openai/v1
+    base_url: https://cyrela-ia-foundry.cognitiveservices.azure.com/openai/deployments/Kimi-K2-Thinking
     max_tokens: 200000
