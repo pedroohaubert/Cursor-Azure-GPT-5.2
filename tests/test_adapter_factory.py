@@ -29,3 +29,22 @@ def test_factory_rejects_unknown_backend():
             backend="unknown",
             api_model="some-model"
         )
+
+
+def test_factory_creates_kimi_adapter():
+    """Test factory creates KimiAdapter for kimi backend."""
+    from app.registry.model_config import ModelConfig
+
+    config = ModelConfig(
+        name="test-kimi",
+        backend="kimi",
+        api_model="Kimi-K2-Thinking",
+        base_url="https://test.openai.azure.com/openai/v1"
+    )
+
+    adapter = AdapterFactory.create_adapter(config)
+    assert adapter is not None
+    assert isinstance(adapter, BaseAdapter)
+    # Verify it's specifically a KimiAdapter
+    from app.kimi.adapter import KimiAdapter
+    assert isinstance(adapter, KimiAdapter)

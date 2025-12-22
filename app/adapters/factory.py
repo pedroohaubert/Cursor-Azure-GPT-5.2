@@ -20,7 +20,7 @@ class AdapterFactory:
             model_config: Configuration specifying backend and model details
 
         Returns:
-            Instance of BaseAdapter subclass (AzureAdapter, AnthropicAdapter, etc.)
+            Instance of BaseAdapter subclass (AzureAdapter, AnthropicAdapter, KimiAdapter, etc.)
 
         Raises:
             ServiceConfigurationError: If backend is not supported
@@ -35,8 +35,12 @@ class AdapterFactory:
             # Import here to avoid circular dependency
             from ..anthropic.adapter import AnthropicAdapter
             return AnthropicAdapter(model_config)
+        elif backend == "kimi":
+            # Import here to avoid circular dependency
+            from ..kimi.adapter import KimiAdapter
+            return KimiAdapter(model_config)
         else:
             raise ServiceConfigurationError(
                 f"Unsupported backend: {backend}. "
-                f"Supported backends: azure, anthropic"
+                f"Supported backends: azure, anthropic, kimi"
             )
