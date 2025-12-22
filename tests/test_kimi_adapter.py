@@ -78,3 +78,39 @@ def test_response_adapter_passes_through_streaming(mock_adapter, app):
 
         assert response.status_code == 200
         assert response.mimetype == "text/event-stream"
+
+
+def test_kimi_adapter_forwards_request(app):
+    """Test that KimiAdapter forwards request correctly."""
+    from app.kimi.adapter import KimiAdapter
+    from unittest.mock import patch, Mock
+    from flask import request as flask_request
+
+    config = ModelConfig(
+        name="kimi-k2-thinking",
+        backend="kimi",
+        api_model="Kimi-K2-Thinking",
+        base_url="https://test.openai.azure.com/openai/v1"
+    )
+
+    with app.test_request_context(
+        json={
+            "model": "kimi-k2-thinking",
+            "messages": [{"role": "user", "content": "Hello"}]
+        }
+    ):
+        with patch('app.kimi.adapter.requests.request') as mock_request:
+            # Mock successful response
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.iter_lines.return_value = [
+                b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"role":"assistant","content":"Hi"},"finish_reason":null}]}',
+                b'data: [DONE]'
+            ]
+            mock_request.return_value = mock_response
+
+            adapter = KimiAdapter(config)
+            response = adapter.forward(flask_request)
+
+            assert response.status_code == 200
+            assert mock_request.called
