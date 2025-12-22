@@ -34,9 +34,9 @@ class KimiRequestAdapter:
                 "AZURE_API_KEY not set in environment"
             )
 
-        # Build request body - mostly pass-through with model name mapping
+        # Build request body - mostly pass-through
+        # Note: model field is optional when using deployment URL format
         kimi_body = {
-            "model": self.adapter.model_config.api_model,
             "messages": payload.get("messages", []),
         }
 
@@ -91,9 +91,9 @@ class KimiRequestAdapter:
         }
 
         current_app.logger.info(
-            f"[Kimi] Request to {url} with model {kimi_body['model']}"
+            f"[Kimi] Request to {url}"
         )
-        current_app.logger.debug(
+        current_app.logger.info(
             f"[Kimi] Request body: {kimi_body}"
         )
 
