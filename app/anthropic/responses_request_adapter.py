@@ -141,8 +141,14 @@ class AnthropicResponsesRequestAdapter:
         payload = req.get_json(silent=True, force=False)
         messages = payload.get("messages", [])
 
-        # Get Azure AD bearer token for Responses API
-        bearer_token = self._get_bearer_token()
+        # Get API key from environment
+        settings = current_app.config
+        api_key = settings.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            from ..exceptions import ServiceConfigurationError
+            raise ServiceConfigurationError(
+                "ANTHROPIC_API_KEY not set in environment"
+            )
 
         # Build OpenAI Responses API request body
         responses_body = {
@@ -191,6 +197,9 @@ class AnthropicResponsesRequestAdapter:
         # For Responses API, the endpoint is /responses
         # Base URL should be: https://xxx.services.ai.azure.com/api/projects/xxx/openai
         url = f"{base_url.rstrip('/')}/responses"
+
+        # Get Azure AD bearer token for authentication
+        bearer_token = self._get_bearer_token()
 
         headers = {
             "Authorization": f"Bearer {bearer_token}",
