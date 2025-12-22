@@ -1,6 +1,6 @@
 """Kimi adapter orchestrating request/response transformations."""
 import requests
-from flask import Request, Response
+from flask import Request, Response, current_app
 
 from ..adapters.base import BaseAdapter
 from ..common.logging import console
@@ -32,6 +32,9 @@ class KimiAdapter(BaseAdapter):
 
         # Call Kimi API
         resp = requests.request(**request_kwargs)
+
+        current_app.logger.debug(f"[Kimi] Response status: {resp.status_code}")
+        current_app.logger.debug(f"[Kimi] Response headers: {dict(resp.headers)}")
 
         if resp.status_code != 200:
             return self._handle_kimi_error(resp, request_kwargs)

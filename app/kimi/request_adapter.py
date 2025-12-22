@@ -93,5 +93,8 @@ class KimiRequestAdapter:
         current_app.logger.info(
             f"[Kimi] Request to {url} with model {kimi_body['model']}"
         )
+        current_app.logger.debug(
+            f"[Kimi] Request body: {kimi_body}"
+        )
 
         return request_kwargs
