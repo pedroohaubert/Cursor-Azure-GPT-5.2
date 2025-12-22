@@ -93,3 +93,41 @@ def test_missing_model_field_returns_error(client):
     data = response.get_json()
     assert "error" in data
     assert "Missing 'model' field" in data["error"]["message"]
+
+
+def test_kimi_model_endpoint_integration(client):
+    """Test that Kimi model can be called through the proxy."""
+    with patch('app.kimi.adapter.requests.request') as mock_request:
+        # Mock successful streaming response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.iter_lines.return_value = [
+            b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"role":"assistant","content":"The"},"finish_reason":null}]}',
+            b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"content":" capital"},"finish_reason":null}]}',
+            b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"content":" of"},"finish_reason":null}]}',
+            b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"content":" France"},"finish_reason":null}]}',
+            b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"content":" is"},"finish_reason":null}]}',
+            b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"content":" Paris"},"finish_reason":"stop"}]}',
+            b'data: [DONE]'
+        ]
+        mock_request.return_value = mock_response
+
+        response = client.post(
+            '/chat/completions',
+            json={
+                "model": "kimi-k2-thinking",
+                "messages": [
+                    {"role": "user", "content": "What is the capital of France?"}
+                ]
+            },
+            headers={"Authorization": "Bearer test-service-api-key"}
+        )
+
+        assert response.status_code == 200
+        assert response.mimetype == "text/event-stream"
+
+        # Verify the request was made with correct parameters
+        assert mock_request.called
+        call_kwargs = mock_request.call_args[1]
+        assert call_kwargs["json"]["model"] == "Kimi-K2-Thinking"
+        assert "Authorization" in call_kwargs["headers"]
