@@ -67,3 +67,12 @@ models:
     api_format: messages  # Use OpenAI Responses API (better thinking + tools support!)
     base_url: https://cyrela-ia-foundry.openai.azure.com/anthropic
     max_tokens: 64000
+
+  # Kimi models via Azure AI Foundry
+  # Uses OpenAI Chat Completions API natively
+  # Set KIMI_API_KEY to your Azure Foundry API key
+  kimi-k2-thinking:
+    backend: kimi
+    api_model: Kimi-K2-Thinking
+    base_url: https://cyrela-ia-foundry.openai.azure.com/openai/v1
+    max_tokens: 4096
