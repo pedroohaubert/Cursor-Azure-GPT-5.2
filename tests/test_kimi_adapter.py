@@ -56,3 +56,25 @@ def test_request_adapter_preserves_messages(mock_adapter, app):
         request_kwargs = adapter.adapt(flask_request)
 
         assert request_kwargs["json"]["messages"] == messages
+
+
+def test_response_adapter_passes_through_streaming(mock_adapter, app):
+    """Test that response adapter passes through OpenAI SSE stream."""
+    from app.kimi.response_adapter import KimiResponseAdapter
+    from unittest.mock import Mock
+
+    # Mock streaming response from Kimi API
+    mock_response = Mock()
+    mock_response.iter_lines.return_value = [
+        b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"role":"assistant","content":"Hello"},"finish_reason":null}]}',
+        b'data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890,"model":"Kimi-K2-Thinking","choices":[{"index":0,"delta":{"content":" world"},"finish_reason":null}]}',
+        b'data: [DONE]'
+    ]
+    mock_response.headers = {"content-type": "text/event-stream"}
+
+    with app.test_request_context():
+        adapter = KimiResponseAdapter(mock_adapter)
+        response = adapter.adapt(mock_response)
+
+        assert response.status_code == 200
+        assert response.mimetype == "text/event-stream"
