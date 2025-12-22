@@ -48,3 +48,6 @@ ANTHROPIC_API_KEY = env.str("ANTHROPIC_API_KEY", "")
 AZURE_CLIENT_ID = env.str("AZURE_CLIENT_ID", "")
 AZURE_CLIENT_SECRET = env.str("AZURE_CLIENT_SECRET", "")
 AZURE_TENANT_ID = env.str("AZURE_TENANT_ID", "")
+
+# Kimi configuration
+KIMI_API_KEY = env.str("KIMI_API_KEY", "")
