@@ -2,6 +2,19 @@
 
 See: http://webtest.readthedocs.org/
 """
+from app.registry.model_config import ModelConfig
+
+
+def test_model_config_accepts_kimi_backend():
+    """Test that ModelConfig accepts 'kimi' as a valid backend."""
+    config = ModelConfig(
+        name="kimi-test",
+        backend="kimi",
+        api_model="Kimi-K2-Thinking",
+        base_url="https://example.openai.azure.com/openai/v1",
+    )
+    assert config.backend == "kimi"
+    assert config.api_model == "Kimi-K2-Thinking"
 
 
 class TestModels:

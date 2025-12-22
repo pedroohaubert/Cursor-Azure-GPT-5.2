@@ -29,5 +29,5 @@ class ModelConfig:
 
     def __post_init__(self):
         """Validate configuration after initialization."""
-        if self.backend not in {"azure", "anthropic"}:
+        if self.backend not in {"azure", "anthropic", "kimi"}:
             raise ValueError(f"Unsupported backend: {self.backend}")
